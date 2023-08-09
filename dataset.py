@@ -6,7 +6,7 @@ import lmdb
 import six
 from fastai.vision import *
 from torchvision import transforms
-
+from PIL import Image
 from transforms import CVColorJitter, CVDeterioration, CVGeometry
 from utils import CharsetMapper, onehot
 
@@ -22,7 +22,7 @@ class ImageDataset(Dataset):
                  max_length: int = 25,
                  check_length: bool = True,
                  case_sensitive: bool = False,
-                 charset_path: str = 'data/charset_vn_with_space.txt',
+                 charset_path: str = 'data/charset_enth.txt',
                  convert_mode: str = 'RGB',
                  data_aug: bool = True,
                  deteriorate_ratio: float = 0.,
@@ -42,11 +42,10 @@ class ImageDataset(Dataset):
         self.charset = CharsetMapper(charset_path, max_length=max_length + 1)
         self.character = self.charset.label_to_char.values()
         self.c = self.charset.num_classes
-
-        self.env = lmdb.open(str(path), readonly=True, lock=False, readahead=False, meminit=False)
-        assert self.env, f'Cannot open LMDB dataset from {path}.'
-        with self.env.begin(write=False) as txn:
-            self.length = int(txn.get('num-samples'.encode()))
+        if is_training:
+            self.data = open('/project/lt200060-capgen/palm/ocr/data/train.jsonl').read().split('\n')[:-1]
+        else:
+            self.data = open('/project/lt200060-capgen/palm/ocr/data/val.jsonl').read().split('\n')[:-1]
 
         if self.is_training and self.data_aug:
             self.augment_tfs = transforms.Compose([
@@ -57,7 +56,7 @@ class ImageDataset(Dataset):
         self.totensor = transforms.ToTensor()
 
     def __len__(self):
-        return self.length
+        return len(self.data)
 
     def _next_image(self, index):
         next_index = random.randint(0, len(self) - 1)
@@ -103,35 +102,12 @@ class ImageDataset(Dataset):
             return cv2.resize(img, (self.img_w, self.img_h))
 
     def get(self, idx):
-        with self.env.begin(write=False) as txn:
-            image_key, label_key = f'image-{idx + 1:09d}', f'label-{idx + 1:09d}'
-            try:
-                label = str(txn.get(label_key.encode()), 'utf-8').strip()  # label
-                if not set(label).issubset(self.character):
-                    return self._next_image(idx)
-                # label = re.sub('[^0-9a-zA-Z]+', '', label)
-                if self.check_length and self.max_length > 0:
-                    if len(label) > self.max_length or len(label) <= 0:
-                        # logging.info(f'Long or short text image is found: {self.name}, {idx}, {label}, {len(label)}')
-                        return self._next_image(idx)
-                label = label[:self.max_length]
+        im, label = self.data[idx]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)  # EXIF warning from TiffPlugin
+            image = Image.open(os.path.join(self.path, im)).convert(self.convert_mode)
 
-                imgbuf = txn.get(image_key.encode())  # image
-                buf = six.BytesIO()
-                buf.write(imgbuf)
-                buf.seek(0)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", UserWarning)  # EXIF warning from TiffPlugin
-                    image = PIL.Image.open(buf).convert(self.convert_mode)
-                if self.is_training and not self._check_image(image):
-                    # logging.info(f'Invalid image is found: {self.name}, {idx}, {label}, {len(label)}')
-                    return self._next_image(idx)
-            except:
-                import traceback
-                traceback.print_exc()
-                logging.info(f'Corrupted image is found: {self.name}, {idx}, {label}, {len(label)}')
-                return self._next_image(idx)
-            return image, label, idx
+        return image, label, idx
 
     def _process_training(self, image):
         if self.data_aug: image = self.augment_tfs(image)
