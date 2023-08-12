@@ -43,10 +43,16 @@ class ImageDataset(Dataset):
         self.charset = CharsetMapper(charset_path, max_length=max_length + 1)
         self.character = self.charset.label_to_char.values()
         self.c = self.charset.num_classes
-        if is_training:
-            self.data = open('/project/lt200060-capgen/palm/ocr/data/train.jsonl').read().split('\n')[:-1]
+        if os.path.exists('/media/palm/Data/ocr/data'):
+            self.f = '/media/palm/Data/ocr/'
+            f = '/home/palm/PycharmProjects/mmmmocr/'
         else:
-            self.data = open('/project/lt200060-capgen/palm/ocr/data/val.jsonl').read().split('\n')[:-1]
+            self.f = '/project/lt200060-capgen/palm/ocr/'
+            f = '/project/lt200060-capgen/palm/ocr/'
+        if is_training:
+            self.data = open(os.path.join(f, 'data/train.jsonl')).read().split('\n')[:-1]
+        else:
+            self.data = open(os.path.join(f, 'data/val.jsonl')).read().split('\n')[:-1]
 
         if self.is_training and self.data_aug:
             self.augment_tfs = transforms.Compose([
@@ -108,7 +114,7 @@ class ImageDataset(Dataset):
         label = data['text']
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)  # EXIF warning from TiffPlugin
-            image = Image.open(os.path.join('/project/lt200060-capgen/peune/ocr', im)).convert(self.convert_mode)
+            image = Image.open(os.path.join(self.f, 'data/images/000000.png')).convert(self.convert_mode)
         label = list(label)
         for n in range(len(label)):
             if label[n] not in self.character:
