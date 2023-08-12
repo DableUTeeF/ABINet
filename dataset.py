@@ -47,7 +47,7 @@ class ImageDataset(Dataset):
             self.f = '/media/palm/Data/ocr/'
             f = '/home/palm/PycharmProjects/mmmmocr/'
         else:
-            self.f = '/project/lt200060-capgen/palm/ocr/'
+            self.f = '/project/lt200060-capgen/peune/ocr'
             f = '/project/lt200060-capgen/palm/ocr/'
         if is_training:
             self.data = open(os.path.join(f, 'data/train.jsonl')).read().split('\n')[:-1]
