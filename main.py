@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+# os.environ['CUDA_VISIBLE_DEVICES'] = ''
 import random
 
 import torch
@@ -37,7 +38,7 @@ def _get_dataset(ds_type, paths, is_training, config, **kwargs):
         'img_w': config.dataset_image_width,
         'max_length': config.dataset_max_length,
         'case_sensitive': config.dataset_case_sensitive,
-        'charset_path': config.dataset_charset_path,
+        'charset_path': 'data/charset_jsonl.txt',
         'data_aug': config.dataset_data_aug,
         'deteriorate_ratio': config.dataset_deteriorate_ratio,
         'is_training': is_training,
@@ -53,7 +54,7 @@ def _get_language_databaunch(config):
     kwargs = {
         'max_length': config.dataset_max_length,
         'case_sensitive': config.dataset_case_sensitive,
-        'charset_path': config.dataset_charset_path,
+        'charset_path': 'data/charset_jsonl.txt',
         'smooth_label': config.dataset_smooth_label,
         'smooth_factor': config.dataset_smooth_factor,
         'one_hot_y': config.dataset_one_hot_y,
@@ -142,7 +143,8 @@ def _get_learner(config, data, model, local_rank=None):
                     eval_iters=config.training_eval_iters,
                     save_iters=config.training_save_iters,
                     start_iters=config.training_start_iters,
-                    stats_iters=config.training_stats_iters)]
+                    stats_iters=config.training_stats_iters)
+            ]
     else:
         learner.callbacks += [
             DumpPrediction(learn=learner,

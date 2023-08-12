@@ -9,6 +9,7 @@ from torchvision import transforms
 from PIL import Image
 from transforms import CVColorJitter, CVDeterioration, CVGeometry
 from utils import CharsetMapper, onehot
+import json
 
 
 class ImageDataset(Dataset):
@@ -32,7 +33,7 @@ class ImageDataset(Dataset):
                  return_raw: bool = False,
                  **kwargs):
         self.path, self.name = Path(path), Path(path).name
-        assert self.path.is_dir() and self.path.exists(), f"{path} is not a valid directory."
+        # assert self.path.is_dir() and self.path.exists(), f"{path} is not a valid directory."
         self.convert_mode, self.check_length = convert_mode, check_length
         self.img_h, self.img_w = img_h, img_w
         self.max_length, self.one_hot_y = max_length, one_hot_y
@@ -102,11 +103,17 @@ class ImageDataset(Dataset):
             return cv2.resize(img, (self.img_w, self.img_h))
 
     def get(self, idx):
-        im, label = self.data[idx]
+        data = json.loads(self.data[idx])
+        im = data['filename']
+        label = data['text']
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)  # EXIF warning from TiffPlugin
-            image = Image.open(os.path.join(self.path, im)).convert(self.convert_mode)
-
+            image = Image.open(os.path.join('/project/lt200060-capgen/peune/ocr', im)).convert(self.convert_mode)
+        label = list(label)
+        for n in range(len(label)):
+            if label[n] not in self.character:
+                label[n] = ''
+        label = ''.join(label)
         return image, label, idx
 
     def _process_training(self, image):
@@ -138,6 +145,7 @@ class ImageDataset(Dataset):
             y = [label, length, idx_new]
         else:
             y = [label, length]
+        # print(label.size(), len(text))
         return image, y
 
 
