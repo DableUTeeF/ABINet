@@ -143,7 +143,7 @@ class ImageDataset(Dataset):
         image = self.totensor(image)
 
         length = tensor(len(text) + 1).to(dtype=torch.long)  # one for end token
-        label = self.charset.get_labels(text, case_sensitive=self.case_sensitive)
+        label = self.charset.get_labels(text, length=99, case_sensitive=self.case_sensitive)
         label = tensor(label).to(dtype=torch.long)
         if self.one_hot_y: label = onehot(label, self.charset.num_classes)
 
