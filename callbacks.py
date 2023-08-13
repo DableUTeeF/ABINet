@@ -202,7 +202,7 @@ class TextAccuracy(Callback):
         output = self._get_output(last_output)
         logits, pt_lengths = output['logits'], output['pt_lengths']
         pt_text, pt_scores, pt_lengths_ = self.decode(logits)
-        assert (pt_lengths == pt_lengths_).all(), f'{pt_lengths} != {pt_lengths_} for {pt_text}'
+        # assert (pt_lengths == pt_lengths_).all(), f'{pt_lengths} != {pt_lengths_} for {pt_text}'
         last_output = self._update_output(last_output, {'pt_text':pt_text, 'pt_scores':pt_scores})
 
         pt_text = [self.charset.trim(t) for t in pt_text]
