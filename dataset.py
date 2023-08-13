@@ -46,13 +46,16 @@ class ImageDataset(Dataset):
         if os.path.exists('/media/palm/Data/ocr/data'):
             self.f = '/media/palm/Data/ocr/'
             f = '/home/palm/PycharmProjects/mmmmocr/'
+            self.data = [
+                '{"filename": "./data/images/000000.png", "text": "4"}',
+            ] * 100
         else:
             self.f = '/project/lt200060-capgen/peune/ocr'
             f = '/project/lt200060-capgen/palm/ocr/'
-        if is_training:
-            self.data = open(os.path.join(f, 'data/train.jsonl')).read().split('\n')[:-1]
-        else:
-            self.data = open(os.path.join(f, 'data/val.jsonl')).read().split('\n')[:-1]
+            if is_training:
+                self.data = open(os.path.join(f, 'data/train.jsonl')).read().split('\n')[:-1]
+            else:
+                self.data = open(os.path.join(f, 'data/val.jsonl')).read().split('\n')[:-1]
 
         if self.is_training and self.data_aug:
             self.augment_tfs = transforms.Compose([
